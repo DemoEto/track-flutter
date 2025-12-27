@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "727719526685",
+    "firebase_url": "https://track-app-project-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "track-app-project",
+    "storage_bucket": "track-app-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727719526685:android:b6140b6d8696934d8fa1f4",
+        "android_client_info": {
+          "package_name": "com.example.track_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbpfTa50JoQgwVGjIDvbGgQO2MXAHQBm4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
