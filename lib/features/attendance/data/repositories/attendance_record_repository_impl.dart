@@ -83,17 +83,35 @@ class FirebaseAttendanceRecordRepository implements AttendanceRecordRepository {
   }
 
   @override
-  Future<List<AttendanceRecordModel>> getRecordsByDateRange(String studentId, DateTime startDate, DateTime endDate) async {
+  Future<List<AttendanceRecordModel>> getRecordsByDateRange(String subjectId, String studentId, DateTime startDate, DateTime endDate) async {
+    // ทำให้ endDate ครอบคลุมทั้งวัน (23:59:59)
+    final adjustedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
     final querySnapshot =
         await _firestore
             .collection(AppConstants.attendanceRecordsCollection)
+            .where('subjectId', isEqualTo: subjectId)
             .where('studentId', isEqualTo: studentId)
             .where('scanTime', isGreaterThanOrEqualTo: startDate)
-            .where('scanTime', isLessThanOrEqualTo: endDate)
+            .where('scanTime', isLessThanOrEqualTo: adjustedEndDate)
+            .orderBy('scanTime')
             .get();
 
     return querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)).toList();
   }
+
+  // @override
+  // Future<List<AttendanceRecordModel>> getRecordsByDateRange(String studentId, DateTime startDate, DateTime endDate) async {
+  //   final querySnapshot =
+  //       await _firestore
+  //           .collection(AppConstants.attendanceRecordsCollection)
+  //           .where('studentId', isEqualTo: studentId)
+  //           .where('scanTime', isGreaterThanOrEqualTo: startDate)
+  //           .where('scanTime', isLessThanOrEqualTo: endDate)
+  //           .get();
+
+  //   return querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)).toList();
+  // }
 
   @override
   Future<AttendanceRecordModel?> getLatestRecord(String studentId) async {
@@ -108,6 +126,28 @@ class FirebaseAttendanceRecordRepository implements AttendanceRecordRepository {
     if (querySnapshot.docs.isNotEmpty) {
       return AttendanceRecordModel.fromFirestore(querySnapshot.docs.first);
     }
+    return null;
+  }
+
+  @override
+  Future<AttendanceRecordModel?> getAttendanceByDate({required String subjectId, required String studentId, required DateTime date}) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final querySnapshot =
+        await _firestore
+            .collection(AppConstants.attendanceRecordsCollection)
+            .where('subjectId', isEqualTo: subjectId)
+            .where('studentId', isEqualTo: studentId)
+            .where('scanTime', isGreaterThanOrEqualTo: startOfDay)
+            .where('scanTime', isLessThan: endOfDay)
+            .limit(1)
+            .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      return AttendanceRecordModel.fromFirestore(querySnapshot.docs.first);
+    }
+
     return null;
   }
 }

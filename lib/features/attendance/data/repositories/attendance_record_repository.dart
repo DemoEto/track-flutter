@@ -11,6 +11,11 @@ abstract class AttendanceRecordRepository {
   Stream<List<AttendanceRecordModel>> getRecordsBySessionStream(String sessionId);
   Future<List<AttendanceRecordModel>> getRecordsBySession(String sessionId);
   Future<List<AttendanceRecordModel>> getRecordsByStudent(String studentId);
-  Future<List<AttendanceRecordModel>> getRecordsByDateRange(String studentId, DateTime startDate, DateTime endDate);
+  Future<List<AttendanceRecordModel>> getRecordsByDateRange(
+     String subjectId,
+    String studentId,
+    DateTime startDate,
+    DateTime endDate,
+  );
   Future<AttendanceRecordModel?> getLatestRecord(String studentId);
 }

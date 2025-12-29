@@ -4,6 +4,9 @@ import 'package:track_app/features/attendance/data/models/subject_model.dart';
 import 'package:track_app/features/attendance/data/repositories/subject_repository.dart';
 import 'package:track_app/core/constants.dart';
 
+import 'package:track_app/features/subject/data/models/subject_with_students_model.dart';
+import 'package:track_app/features/auth/data/models/user_model.dart';
+import 'package:track_app/core/services/service_locator.dart';
 class FirebaseSubjectRepository implements SubjectRepository {
   final FirebaseFirestore _firestore;
 
@@ -146,4 +149,40 @@ class FirebaseSubjectRepository implements SubjectRepository {
     final unenrolledAt = data['unenrolledAt'] as Timestamp?;
     return unenrolledAt == null;
   }
+
+  
+@override
+Future<List<SubjectWithStudentsModel>> getSubjectsWithStudentsByTeacher(
+  String teacherId,
+) async {
+  // 1️⃣ ดึงวิชาของครู
+  final subjects = await getSubjectsByTeacher(teacherId);
+
+  final List<SubjectWithStudentsModel> result = [];
+
+  for (final subject in subjects) {
+    // 2️⃣ ดึง studentIds ของแต่ละวิชา
+    final studentIds = await getStudentIdsForSubject(subject.id);
+
+    // 3️⃣ ดึง UserModel ของนักเรียน
+    final List<UserModel> students = [];
+
+    for (final studentId in studentIds) {
+      final student = await locator.userRepository.getUser(studentId);
+      if (student != null) {
+        students.add(student);
+      }
+    }
+
+    // 4️⃣ รวมเป็น SubjectWithStudentsModel
+    result.add(
+      SubjectWithStudentsModel(
+        subject: subject,
+        students: students,
+      ),
+    );
+  }
+
+  return result;
+}
 }

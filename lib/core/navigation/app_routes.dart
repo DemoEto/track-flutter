@@ -24,8 +24,12 @@ import 'package:track_app/features/homework/presentation/screens/homework_screen
 
 // Notification screens
 import 'package:track_app/features/notification/presentation/screens/notification_screen.dart';
+
 // Subject screens
 import 'package:track_app/features/subject/presentation/screens/teacher/teacher_subject_management_screen.dart';
+
+// Sumerized 
+import 'package:track_app/features/summerize/presentation/screens/summerize_screen.dart';
 
 class AppRoutes {
   // Attendance Routes
@@ -116,7 +120,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (context) => const TeacherSubjectManagementScreen());
 
       case AppRoutes.summerize:
-        return MaterialPageRoute(builder: (context) => const Summerize());
+        return MaterialPageRoute(builder: (context) => const SummerizeScreen());
 
       default:
         return MaterialPageRoute(builder: (context) => const LoginScreen());

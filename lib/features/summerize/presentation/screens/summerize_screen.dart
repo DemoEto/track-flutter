@@ -20,14 +20,20 @@ class SummerizeScreen extends StatelessWidget {
 
     // If user is a student, show student-specific options
     if (currentUser.role.value == 'student') {
-      return const StudentAttendanceScreen();
+      return const StudentSummerizeScreen();
     }
 
     // If user is a teacher, show teacher-specific options
     else if (currentUser.role.value == 'teacher') {
       return const TeacherSummerizeScreen();
 
-    } else {
+    }
+
+    // else if (currentUser.role.value == 'parent'){
+    //   return const TeacherSummerizeScreen();
+    // }
+    
+     else {
       return const Scaffold(body: Center(child: Text('User role not recognized')));
     }
 

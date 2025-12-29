@@ -1,5 +1,6 @@
 // Subject repository interface with enrollment functionality
 import 'package:track_app/features/attendance/data/models/subject_model.dart';
+import 'package:track_app/features/subject/data/models/subject_with_students_model.dart';
 
 abstract class SubjectRepository {
   Future<void> createSubject(SubjectModel subject);
@@ -18,4 +19,7 @@ abstract class SubjectRepository {
   Future<List<String>> getSubjectIdsForStudent(String studentId);
   Future<List<SubjectModel>> getSubjectsByStudent(String studentId);
   Future<bool> isStudentEnrolled(String subjectId, String studentId);
+  Future<List<SubjectWithStudentsModel>> getSubjectsWithStudentsByTeacher(
+    String teacherId,
+  );
 }
