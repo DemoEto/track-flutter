@@ -83,59 +83,59 @@ class FirebaseAttendanceRecordRepository implements AttendanceRecordRepository {
   }
 
   //-- V.3
-  @override
-  Future<List<AttendanceRecordModel>> getRecordsByDateRange(String subjectId, String studentId, DateTime startDate, DateTime endDate) async {
-    try {
-      // 1. หา sessionIds ทั้งหมดที่เกี่ยวข้องกับ subjectId
-      final sessionsSnapshot =
-          await _firestore
-              .collection(AppConstants.attendanceSessionsCollection) // ใช้ constant ของคุณ
-              .where('subjectId', isEqualTo: subjectId)
-              .get();
+  // @override
+  // Future<List<AttendanceRecordModel>> getRecordsByDateRange(String subjectId, String studentId, DateTime startDate, DateTime endDate) async {
+  //   try {
+  //     // 1. หา sessionIds ทั้งหมดที่เกี่ยวข้องกับ subjectId
+  //     final sessionsSnapshot =
+  //         await _firestore
+  //             .collection(AppConstants.attendanceSessionsCollection) // ใช้ constant ของคุณ
+  //             .where('subjectId', isEqualTo: subjectId)
+  //             .get();
 
-      if (sessionsSnapshot.docs.isEmpty) {
-        return [];
-      }
+  //     if (sessionsSnapshot.docs.isEmpty) {
+  //       return [];
+  //     }
 
-      final sessionIds = sessionsSnapshot.docs.map((doc) => doc.id).toList();
+  //     final sessionIds = sessionsSnapshot.docs.map((doc) => doc.id).toList();
 
-      // 2. ทำให้ endDate ครอบคลุมทั้งวัน (23:59:59)
-      final adjustedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+  //     // 2. ทำให้ endDate ครอบคลุมทั้งวัน (23:59:59)
+  //     final adjustedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
 
-      // 3. ดึง attendance_records โดย filter ตาม studentId, sessionIds และ date range
-      final List<AttendanceRecordModel> allRecords = [];
+  //     // 3. ดึง attendance_records โดย filter ตาม studentId, sessionIds และ date range
+  //     final List<AttendanceRecordModel> allRecords = [];
 
-      // แบ่ง sessionIds เป็น chunks ของ 10 (ข้อจำกัดของ Firestore whereIn)
-      for (int i = 0; i < sessionIds.length; i += 10) {
-        final chunk = sessionIds.skip(i).take(10).toList();
+  //     // แบ่ง sessionIds เป็น chunks ของ 10 (ข้อจำกัดของ Firestore whereIn)
+  //     for (int i = 0; i < sessionIds.length; i += 10) {
+  //       final chunk = sessionIds.skip(i).take(10).toList();
 
-        final querySnapshot =
-            await _firestore
-                .collection(AppConstants.attendanceRecordsCollection)
-                .where('studentId', isEqualTo: studentId)
-                .where('sessionId', whereIn: chunk)
-                .where('scanTime', isGreaterThanOrEqualTo: startDate)
-                .where('scanTime', isLessThanOrEqualTo: adjustedEndDate)
-                .orderBy('scanTime')
-                .get();
+  //       final querySnapshot =
+  //           await _firestore
+  //               .collection(AppConstants.attendanceRecordsCollection)
+  //               .where('studentId', isEqualTo: studentId)
+  //               .where('sessionId', whereIn: chunk)
+  //               .where('scanTime', isGreaterThanOrEqualTo: startDate)
+  //               .where('scanTime', isLessThanOrEqualTo: adjustedEndDate)
+  //               .orderBy('scanTime')
+  //               .get();
 
-        allRecords.addAll(querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)));
-      }
+  //       allRecords.addAll(querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)));
+  //     }
 
-      // เรียงลำดับตาม scanTime (เก่าสุดก่อน)
-      allRecords.sort((a, b) => a.scanTime.compareTo(b.scanTime));
+  //     // เรียงลำดับตาม scanTime (เก่าสุดก่อน)
+  //     allRecords.sort((a, b) => a.scanTime.compareTo(b.scanTime));
 
-      return allRecords;
-    } catch (e) {
-      print('Error in getRecordsByDateRange: $e');
-      // ถ้า error เกี่ยวกับ composite index ให้ลอง filter date ใน Dart แทน
-      return _getRecordsByDateRangeFallback(subjectId, studentId, startDate, endDate);
-    }
-  }
+  //     return allRecords;
+  //   } catch (e) {
+  //     print('Error in getRecordsByDateRange: $e');
+  //     // ถ้า error เกี่ยวกับ composite index ให้ลอง filter date ใน Dart แทน
+  //     return _getRecordsByDateRangeFallback(subjectId, studentId, startDate, endDate);
+  //   }
+  // }
 
   //-- V.2.5
   // Fallback method ถ้า Firestore ต้องการ composite index
-  Future<List<AttendanceRecordModel>> _getRecordsByDateRangeFallback(String subjectId, String studentId, DateTime startDate, DateTime endDate) async {
+  Future<List<AttendanceRecordModel>> getRecordsByDateRange(String subjectId, String studentId, DateTime startDate, DateTime endDate) async {
     // 1. หา sessionIds
     final sessionsSnapshot = await _firestore.collection(AppConstants.attendanceSessionsCollection).where('subjectId', isEqualTo: subjectId).get();
 
