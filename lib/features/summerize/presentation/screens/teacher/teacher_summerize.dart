@@ -287,7 +287,8 @@ class _TeacherSummerizeScreenState extends State<TeacherSummerizeScreen> {
                 ),
               ],
             ),
-const SizedBox(height: 12),
+
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
@@ -299,6 +300,7 @@ const SizedBox(height: 12),
 
                 _pageController.animateToPage(1, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
               },
+
               child: const Text('Confirm'),
             ),
           ],
@@ -308,18 +310,10 @@ const SizedBox(height: 12),
   }
 
   Widget _buildResultPage() {
-  if (_selectedSubject == null ||
-      _selectedStudent == null ||
-      _startDate == null ||
-      _endDate == null) {
-    return const Center(child: Text('กรุณาเลือกข้อมูลให้ครบถ้วน'));
-  }
+    if (_selectedSubject == null || _selectedStudent == null || _startDate == null || _endDate == null) {
+      return const Center(child: Text('กรุณาเลือกข้อมูลให้ครบถ้วน'));
+    }
 
-  return AttendanceResultPage(
-    subjectId: _selectedSubject!.subject.id,
-    studentId: _selectedStudent!.id,
-    startDate: _startDate!,
-    endDate: _endDate!,
-  );
-}
+    return AttendanceResultPage(subjectId: _selectedSubject!.subject.id, studentId: _selectedStudent!.id, startDate: _startDate!, endDate: _endDate!);
+  }
 }

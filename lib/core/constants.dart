@@ -34,6 +34,7 @@ class AppConstants {
   static const String notificationHomework = 'homework';
   static const String notificationBus = 'bus';
   static const String notificationGeneral = 'general';
+
 }
 
 // Error messages

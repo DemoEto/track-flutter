@@ -82,24 +82,124 @@ class FirebaseAttendanceRecordRepository implements AttendanceRecordRepository {
     return querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)).toList();
   }
 
+  //-- V.3
   @override
   Future<List<AttendanceRecordModel>> getRecordsByDateRange(String subjectId, String studentId, DateTime startDate, DateTime endDate) async {
-    // ทำให้ endDate ครอบคลุมทั้งวัน (23:59:59)
-    final adjustedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+    try {
+      // 1. หา sessionIds ทั้งหมดที่เกี่ยวข้องกับ subjectId
+      final sessionsSnapshot =
+          await _firestore
+              .collection(AppConstants.attendanceSessionsCollection) // ใช้ constant ของคุณ
+              .where('subjectId', isEqualTo: subjectId)
+              .get();
 
-    final querySnapshot =
-        await _firestore
-            .collection(AppConstants.attendanceRecordsCollection)
-            .where('subjectId', isEqualTo: subjectId)
-            .where('studentId', isEqualTo: studentId)
-            .where('scanTime', isGreaterThanOrEqualTo: startDate)
-            .where('scanTime', isLessThanOrEqualTo: adjustedEndDate)
-            .orderBy('scanTime')
-            .get();
+      if (sessionsSnapshot.docs.isEmpty) {
+        return [];
+      }
 
-    return querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)).toList();
+      final sessionIds = sessionsSnapshot.docs.map((doc) => doc.id).toList();
+
+      // 2. ทำให้ endDate ครอบคลุมทั้งวัน (23:59:59)
+      final adjustedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
+      // 3. ดึง attendance_records โดย filter ตาม studentId, sessionIds และ date range
+      final List<AttendanceRecordModel> allRecords = [];
+
+      // แบ่ง sessionIds เป็น chunks ของ 10 (ข้อจำกัดของ Firestore whereIn)
+      for (int i = 0; i < sessionIds.length; i += 10) {
+        final chunk = sessionIds.skip(i).take(10).toList();
+
+        final querySnapshot =
+            await _firestore
+                .collection(AppConstants.attendanceRecordsCollection)
+                .where('studentId', isEqualTo: studentId)
+                .where('sessionId', whereIn: chunk)
+                .where('scanTime', isGreaterThanOrEqualTo: startDate)
+                .where('scanTime', isLessThanOrEqualTo: adjustedEndDate)
+                .orderBy('scanTime')
+                .get();
+
+        allRecords.addAll(querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)));
+      }
+
+      // เรียงลำดับตาม scanTime (เก่าสุดก่อน)
+      allRecords.sort((a, b) => a.scanTime.compareTo(b.scanTime));
+
+      return allRecords;
+    } catch (e) {
+      print('Error in getRecordsByDateRange: $e');
+      // ถ้า error เกี่ยวกับ composite index ให้ลอง filter date ใน Dart แทน
+      return _getRecordsByDateRangeFallback(subjectId, studentId, startDate, endDate);
+    }
   }
 
+  //-- V.2.5
+  // Fallback method ถ้า Firestore ต้องการ composite index
+  Future<List<AttendanceRecordModel>> _getRecordsByDateRangeFallback(String subjectId, String studentId, DateTime startDate, DateTime endDate) async {
+    // 1. หา sessionIds
+    final sessionsSnapshot = await _firestore.collection(AppConstants.attendanceSessionsCollection).where('subjectId', isEqualTo: subjectId).get();
+
+    if (sessionsSnapshot.docs.isEmpty) {
+      return [];
+    }
+
+    final sessionIds = sessionsSnapshot.docs.map((doc) => doc.id).toList();
+    final adjustedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
+    // 2. ดึงข้อมูลโดยไม่ filter date ใน Firestore
+    final List<AttendanceRecordModel> allRecords = [];
+
+    for (int i = 0; i < sessionIds.length; i += 10) {
+      final chunk = sessionIds.skip(i).take(10).toList();
+
+      final querySnapshot =
+          await _firestore
+              .collection(AppConstants.attendanceRecordsCollection)
+              .where('studentId', isEqualTo: studentId)
+              .where('sessionId', whereIn: chunk)
+              .get();
+
+      allRecords.addAll(querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)));
+    }
+
+    // 3. Filter date range ใน Dart
+    final filteredRecords =
+        allRecords.where((record) {
+          return record.scanTime.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+              record.scanTime.isBefore(adjustedEndDate.add(const Duration(seconds: 1)));
+        }).toList();
+
+    // เรียงลำดับ
+    filteredRecords.sort((a, b) => a.scanTime.compareTo(b.scanTime));
+
+    return filteredRecords;
+  }
+
+  //-- V.2
+  // @override
+  // Future<List<AttendanceRecordModel>> getRecordsByDateRange(
+  //   String subjectId,
+  //   String studentId,
+  //   DateTime startDate,
+  //   DateTime endDate
+  //   ) async {
+  //   // ทำให้ endDate ครอบคลุมทั้งวัน (23:59:59)
+  //   final adjustedEndDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
+  //   final querySnapshot =
+  //       await _firestore
+  //           .collection(AppConstants.attendanceRecordsCollection)
+  //           .where('subjectId', isEqualTo: subjectId)
+  //           .where('studentId', isEqualTo: studentId)
+  //           .where('scanTime', isGreaterThanOrEqualTo: startDate)
+  //           .where('scanTime', isLessThanOrEqualTo: adjustedEndDate)
+  //           .orderBy('scanTime')
+  //           .get();
+
+  //   return querySnapshot.docs.map((doc) => AttendanceRecordModel.fromFirestore(doc)).toList();
+  // }
+
+  //-- V.1
   // @override
   // Future<List<AttendanceRecordModel>> getRecordsByDateRange(String studentId, DateTime startDate, DateTime endDate) async {
   //   final querySnapshot =
@@ -131,23 +231,62 @@ class FirebaseAttendanceRecordRepository implements AttendanceRecordRepository {
 
   @override
   Future<AttendanceRecordModel?> getAttendanceByDate({required String subjectId, required String studentId, required DateTime date}) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
+    try {
+      // 1. หา sessionIds ที่เกี่ยวข้องกับ subjectId
+      final sessionsSnapshot = await _firestore.collection(AppConstants.attendanceSessionsCollection).where('subjectId', isEqualTo: subjectId).get();
 
-    final querySnapshot =
-        await _firestore
-            .collection(AppConstants.attendanceRecordsCollection)
-            .where('subjectId', isEqualTo: subjectId)
-            .where('studentId', isEqualTo: studentId)
-            .where('scanTime', isGreaterThanOrEqualTo: startOfDay)
-            .where('scanTime', isLessThan: endOfDay)
-            .limit(1)
-            .get();
+      if (sessionsSnapshot.docs.isEmpty) {
+        return null;
+      }
 
-    if (querySnapshot.docs.isNotEmpty) {
-      return AttendanceRecordModel.fromFirestore(querySnapshot.docs.first);
+      final sessionIds = sessionsSnapshot.docs.map((doc) => doc.id).toList();
+
+      // 2. กำหนดช่วงเวลาของวัน
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      // 3. Query records
+      for (int i = 0; i < sessionIds.length; i += 10) {
+        final chunk = sessionIds.skip(i).take(10).toList();
+
+        final querySnapshot =
+            await _firestore
+                .collection(AppConstants.attendanceRecordsCollection)
+                .where('studentId', isEqualTo: studentId)
+                .where('sessionId', whereIn: chunk)
+                .where('scanTime', isGreaterThanOrEqualTo: startOfDay)
+                .where('scanTime', isLessThan: endOfDay)
+                .limit(1)
+                .get();
+
+        if (querySnapshot.docs.isNotEmpty) {
+          return AttendanceRecordModel.fromFirestore(querySnapshot.docs.first);
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('Error in getAttendanceByDate: $e');
+      return null;
     }
-
-    return null;
   }
+
+  // @override
+  // Future<AttendanceRecordModel?> getAttendanceByDate({required String subjectId, required String studentId, required DateTime date}) async {
+  //   final startOfDay = DateTime(date.year, date.month, date.day);
+  //   final endOfDay = startOfDay.add(const Duration(days: 1));
+  //   final querySnapshot =
+  //       await _firestore
+  //           .collection(AppConstants.attendanceRecordsCollection)
+  //           .where('subjectId', isEqualTo: subjectId)
+  //           .where('studentId', isEqualTo: studentId)
+  //           .where('scanTime', isGreaterThanOrEqualTo: startOfDay)
+  //           .where('scanTime', isLessThan: endOfDay)
+  //           .limit(1)
+  //           .get();
+  //   if (querySnapshot.docs.isNotEmpty) {
+  //     return AttendanceRecordModel.fromFirestore(querySnapshot.docs.first);
+  //   }
+  //   return null;
+  // }
 }
