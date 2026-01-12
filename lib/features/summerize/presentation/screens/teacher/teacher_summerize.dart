@@ -8,7 +8,7 @@ import 'package:track_app/features/auth/data/models/user_model.dart';
 import 'package:track_app/features/attendance/data/models/subject_model.dart';
 import 'package:track_app/features/subject/data/models/subject_with_students_model.dart';
 
-import '../student/attendance_result_page.dart';
+import '../attendance_result_page.dart';
 
 class TeacherSummerizeScreen extends StatefulWidget {
   const TeacherSummerizeScreen({super.key});

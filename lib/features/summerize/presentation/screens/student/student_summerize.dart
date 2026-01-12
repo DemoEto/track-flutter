@@ -6,7 +6,7 @@ import 'package:track_app/core/services/service_locator.dart';
 import 'package:track_app/features/attendance/data/models/subject_model.dart';
 import 'package:track_app/features/auth/logic/auth_provider.dart';
 
-import 'attendance_result_page.dart';
+import '../attendance_result_page.dart';
 
 class StudentSummerizeScreen extends StatefulWidget {
   const StudentSummerizeScreen({super.key});
