@@ -115,7 +115,6 @@ class FirebaseSubjectRepository implements SubjectRepository {
         await _firestore
             .collection(AppConstants.subjectEnrollmentsCollection)
             .where('studentId', isEqualTo: studentId)
-            .where('unenrolledAt', isNull: true) // Only active enrollments
             .get();
 
     return querySnapshot.docs.map((doc) => (doc.data()['subjectId'] as String)).toList();

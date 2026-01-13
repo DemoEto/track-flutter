@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:track_app/core/services/service_locator.dart';
 import 'package:track_app/features/auth/logic/auth_provider.dart';
 import 'package:track_app/features/auth/data/models/user_model.dart';
-import 'package:track_app/features/attendance/data/models/subject_model.dart';
 import 'package:track_app/features/subject/data/models/subject_with_students_model.dart';
 
 import '../attendance_result_page.dart';
@@ -54,37 +53,6 @@ class _TeacherSummerizeScreenState extends State<TeacherSummerizeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
     }
   }
-
-  //-- Load subjects
-  // Future<void> _loadSubjects() async {
-  //   final authProvider = context.read<AuthProvider>();
-  //   final teacherId = authProvider.currentUser?.id;
-  //   if (teacherId != null) {
-  //     try {
-  //       final subjects = await locator.subjectRepository.getSubjectsByTeacher(teacherId);
-  //       if (mounted) {
-  //         setState(() {
-  //           _subjects = subjects;
-  //           _isLoading = false;
-  //         });
-  //       }
-  //     } catch (e) {
-  //       if (mounted) {
-  //         setState(() {
-  //           _isLoading = false;
-  //         });
-  //         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading subjects: $e'), backgroundColor: Colors.red));
-  //       }
-  //     }
-  //   } else {
-  //     if (mounted) {
-  //       setState(() {
-  //         _isLoading = false;
-  //       });
-  //       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No user found'), backgroundColor: Colors.red));
-  //     }
-  //   }
-  // }
 
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(

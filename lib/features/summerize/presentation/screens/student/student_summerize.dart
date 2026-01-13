@@ -45,9 +45,11 @@ class _StudentSummerizeScreenState extends State<StudentSummerizeScreen> {
       setState(() => _isLoading = false);
       return;
     }
+    // print('ID : ${studentId}');
 
     try {
       final result = await locator.subjectRepository.getSubjectsByStudent(studentId);
+      // print('result subject: ${result}');
 
       if (mounted) {
         setState(() {
@@ -96,7 +98,7 @@ class _StudentSummerizeScreenState extends State<StudentSummerizeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Teacher Summary'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
+      appBar: AppBar(title: const Text('Student Summary'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
