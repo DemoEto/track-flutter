@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:track_app/core/services/service_locator.dart';
+import 'package:track_app/features/attendance/data/models/subject_model.dart';
 import 'package:track_app/features/auth/logic/auth_provider.dart';
 import 'package:track_app/features/auth/data/models/user_model.dart';
 import 'package:track_app/features/subject/data/models/subject_with_students_model.dart';
@@ -20,8 +21,10 @@ class _ParentSummarizeScreenState extends State<ParentSummarizeScreen> {
   final PageController _pageController = PageController();
   final _formKey = GlobalKey<FormState>();
 
-  List<SubjectWithStudentsModel> _subjectsWithStudents = [];
-  SubjectWithStudentsModel? _selectedSubject;
+  List<SubjectModel> _subjectsWithStudents = [];
+  SubjectModel? _selectedSubject;
+
+  List<UserModel> _childStudents = [];
   UserModel? _selectedStudent;
 
   // DateTimeRange? _selectedRange;
@@ -31,16 +34,39 @@ class _ParentSummarizeScreenState extends State<ParentSummarizeScreen> {
 
   bool _isLoading = true;
 
-  //-- Load Subjects and Students
-  Future<void> _loadSubjects() async {
-    final teacherId = context.read<AuthProvider>().currentUser?.id;
-    if (teacherId == null) {
+  // Load student child
+  Future<void> _loadStudentChild() async {
+    final parentId = context.read<AuthProvider>().currentUser?.id;
+    if (parentId == null) {
       setState(() => _isLoading = false);
       return;
     }
 
     try {
-      final result = await locator.subjectRepository.getSubjectsWithStudentsByTeacher(teacherId);
+      final result = await locator.userRepository.getChildrenForParent(parentId);
+
+      if (mounted) {
+        setState(() {
+          _childStudents = result;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+    }
+  }
+  
+  // -- Load Subjects with Students
+  Future<void> _loadSubjects() async {
+    final studentId = _selectedStudent?.id;
+    if (studentId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final result = await locator.subjectRepository.getSubjectsByStudent(studentId);
 
       if (mounted) {
         setState(() {
@@ -90,7 +116,7 @@ class _ParentSummarizeScreenState extends State<ParentSummarizeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSubjects();
+    _loadStudentChild();
   }
 
   @override
@@ -103,17 +129,14 @@ class _ParentSummarizeScreenState extends State<ParentSummarizeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Teacher Summerize'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
+      appBar: AppBar(title: const Text('Parent Summerize'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : PageView(
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildFormPage(),
-                  _buildResultPage(),
-                ],
+                children: [_buildFormPage(), _buildResultPage()],
               ),
     );
   }
@@ -127,73 +150,40 @@ class _ParentSummarizeScreenState extends State<ParentSummarizeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 24),
-            const Text('Select Subject', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-
-            DropdownButtonFormField<SubjectWithStudentsModel>(
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              hint: const Text('Select subject'),
-              value: _selectedSubject,
-              items: _subjectsWithStudents.map((item) => DropdownMenuItem(value: item, child: Text(item.subject.name))).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSubject = value;
-                  _selectedStudent = null; // reset นักเรียน
-                });
-              },
-              validator: (value) => value == null ? 'Please select subject' : null,
-            ),
-
-            // DropdownButtonFormField<String>(
-            //   decoration: const InputDecoration(border: OutlineInputBorder()),
-            //   hint: _subjects.isEmpty ? const Text('No subjects available') : const Text('Select a subject'),
-            //   value: _selectedSubjectId,
-            //   items:
-            //       _subjects.isEmpty
-            //           ? null
-            //           : _subjects.map((subject) => DropdownMenuItem(value: subject.id, child: Text(subject.name))).toList(),
-            //   onChanged:
-            //       _subjects.isEmpty
-            //           ? null
-            //           : (value) {
-            //             setState(() {
-            //               _selectedSubjectId = value;
-            //             });
-            //           },
-            //   validator: (value) {
-            //     if (_subjects.isEmpty) {
-            //       return 'No subjects available';
-            //     }
-            //     if (value == null || value.isEmpty) {
-            //       return 'Please select a subject';
-            //     }
-            //     return null;
-            //   },
-            // ),
-            const SizedBox(height: 24),
             const Text('Select Student', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
 
             DropdownButtonFormField<UserModel>(
-              decoration: const InputDecoration(border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
               hint: const Text('Select student'),
               value: _selectedStudent,
-              items:
-                  (_selectedSubject?.students ?? [])
-                      .map((student) => DropdownMenuItem(value: student, child: Text(student.name ?? student.email)))
-                      .toList(),
-              onChanged:
-                  _selectedSubject == null
-                      ? null
-                      : (value) {
-                        setState(() => _selectedStudent = value);
-                      },
+              items: _childStudents
+                  .map(
+                    (student) => DropdownMenuItem<UserModel>(
+                      value: student,
+                      child: Text(
+                        student.name.isNotEmpty ? student.name : student.email,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _childStudents.isEmpty
+                  ? null
+                  : (value) async{
+                      setState(() {
+                        _selectedStudent = value;
+                // print('student selected : ${_selectedStudent?.id}');
+                _selectedSubject = null;
+                _subjectsWithStudents = [];
+
+                      });
+                      await _loadSubjects();
+                    },
               validator: (value) {
-                if (_selectedSubject == null) {
-                  return 'Please select subject first';
-                }
-                if (_selectedSubject!.students.isEmpty) {
-                  return 'No student enroll this subject';
+                if (_childStudents.isEmpty) {
+                  return 'No student found for this parent';
                 }
                 if (value == null) {
                   return 'Please select student';
@@ -202,32 +192,24 @@ class _ParentSummarizeScreenState extends State<ParentSummarizeScreen> {
               },
             ),
 
-            // DropdownButtonFormField<String>(
-            //   decoration: const InputDecoration(border: OutlineInputBorder()),
-            //   hint: _subjects.isEmpty ? const Text('No student enroll this subject') : const Text('Select student'),
-            //   value: _selectedSubjectId,
-            //   items:
-            //       _subjects.isEmpty
-            //           ? null
-            //           : _subjects.map((subject) => DropdownMenuItem(value: subject.id, child: Text(subject.name))).toList(),
-            //   onChanged:
-            //       _subjects.isEmpty
-            //           ? null
-            //           : (value) {
-            //             setState(() {
-            //               _selectedSubjectId = value;
-            //             });
-            //           },
-            //   validator: (value) {
-            //     if (_subjects.isEmpty) {
-            //       return 'No subjects available';
-            //     }
-            //     if (value == null || value.isEmpty) {
-            //       return 'Please select a subject';
-            //     }
-            //     return null;
-            //   },
-            // ),
+
+            const SizedBox(height: 24),
+            const Text('Select Subject', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+
+            DropdownButtonFormField<SubjectModel>(
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+              hint: const Text('Select subject'),
+              value: _selectedSubject,
+              items: _subjectsWithStudents.map((item) => DropdownMenuItem(value: item, child: Text(item.name))).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedSubject = value;
+                });
+              },
+              validator: (value) => value == null ? 'Please select subject' : null,
+            ),
+
             const SizedBox(height: 24),
             const Text('Select date', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
@@ -276,6 +258,6 @@ class _ParentSummarizeScreenState extends State<ParentSummarizeScreen> {
       return const Center(child: Text('กรุณาเลือกข้อมูลให้ครบถ้วน'));
     }
 
-    return AttendanceResultPage(subjectId: _selectedSubject!.subject.id, studentId: _selectedStudent!.id, startDate: _startDate!, endDate: _endDate!);
+    return AttendanceResultPage(subjectId: _selectedSubject!.id, studentId: _selectedStudent!.id, startDate: _startDate!, endDate: _endDate!);
   }
 }

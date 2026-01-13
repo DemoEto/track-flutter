@@ -114,21 +114,32 @@ class FirebaseUserRepository implements UserRepository {
 
   @override
   Future<List<UserModel>> getChildrenForParent(String parentId) async {
-    final parentDoc = await _firestore.collection(AppConstants.usersCollection).doc(parentId).get();
+    final parentDoc = await _firestore
+      .collection(AppConstants.usersCollection)
+      .doc(parentId)
+      .get();
+
     if (!parentDoc.exists) {
       return [];
     }
 
     final parentData = parentDoc.data();
-    final childUserIds = (parentData?['childUserIds'] as List<dynamic>?)?.map((e) => e.toString()).toList();
+    final childUserIds = (parentData?['childUserIds'] as List<dynamic>?)
+      ?.map((e) => e.toString())
+      .toList();
 
     if (childUserIds == null || childUserIds.isEmpty) {
       return [];
     }
 
     // Get all child users
-    final childDocs = await _firestore.collection(AppConstants.usersCollection).where(FieldPath.documentId, whereIn: childUserIds).get();
+    final childDocs = await _firestore
+      .collection(AppConstants.usersCollection)
+      .where(FieldPath.documentId, whereIn: childUserIds)
+      .get();
 
-    return childDocs.docs.map((doc) => UserModel.fromFirestore(doc)).toList();
+    return childDocs.docs.map((doc) => UserModel
+      .fromFirestore(doc))
+      .toList();
   }
 }
