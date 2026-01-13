@@ -25,7 +25,7 @@ class AttendanceResultPage extends StatelessWidget {
         '${DateFormat('dd/MM/yyyy').format(endDate)}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Attendance Summary')),
+      appBar: AppBar(title: const Text('Attendance Summary'),),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: FutureBuilder<List<AttendanceRecordModel>>(
@@ -58,6 +58,7 @@ class AttendanceResultPage extends StatelessWidget {
             return Column(
               children: [
                 // Summary Card (ไม่ scroll)
+                
                 _buildSummaryCard(presentCount, lateCount, absentCount),
                 const SizedBox(height: 16),
                 // Attendance List (scroll ได้)

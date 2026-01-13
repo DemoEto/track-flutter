@@ -5,6 +5,7 @@ import 'package:track_app/features/auth/logic/auth_provider.dart';
 // Import the specific attendance screens
 import 'student/student_summerize.dart';
 import 'teacher/teacher_summerize.dart';
+import 'parent/parent_summarize.dart';
 
 class SummerizeScreen extends StatelessWidget {
   const SummerizeScreen({super.key});
@@ -29,9 +30,9 @@ class SummerizeScreen extends StatelessWidget {
 
     }
 
-    // else if (currentUser.role.value == 'parent'){
-    //   return const TeacherSummerizeScreen();
-    // }
+    else if (currentUser.role.value == 'parent'){
+      return const ParentSummarizeScreen();
+    }
     
      else {
       return const Scaffold(body: Center(child: Text('User role not recognized')));
